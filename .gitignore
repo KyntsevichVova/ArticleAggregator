@@ -1,0 +1,16 @@
+target/
+!**/src/main/**
+!**/src/test/**
+
+.mvn
+mvnw
+mvnw.cmd
+
+### IntelliJ IDEA ###
+.idea
+*.iws
+*.iml
+*.ipr
+
+### VS Code ###
+.vscode/
