@@ -18,6 +18,8 @@
 		<java.version>13</java.version>
 		<lombok.version>1.18.12</lombok.version>
 		<jsoup.version>1.13.1</jsoup.version>
+		<postgresql.version>42.2.10</postgresql.version>
+		<flyway.version>6.4.0</flyway.version>
 	</properties>
 
 	<dependencies>
@@ -41,6 +43,7 @@
 		<dependency>
 			<groupId>org.postgresql</groupId>
 			<artifactId>postgresql</artifactId>
+			<version>${postgresql.version}</version>
 			<scope>runtime</scope>
 		</dependency>
 
@@ -48,6 +51,12 @@
 			<groupId>org.projectlombok</groupId>
 			<artifactId>lombok</artifactId>
 			<version>${lombok.version}</version>
+		</dependency>
+
+		<dependency>
+			<groupId>org.flywaydb</groupId>
+			<artifactId>flyway-core</artifactId>
+			<version>${flyway.version}</version>
 		</dependency>
 
 		<dependency>
