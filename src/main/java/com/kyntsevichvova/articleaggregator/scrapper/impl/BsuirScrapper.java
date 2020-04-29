@@ -50,7 +50,7 @@ public class BsuirScrapper implements RepositoryScrapper {
                         Elements children = element.children();
                         String title = children.eq(1).get(0).text();
                         articles.add(Article.builder()
-                                .repo_id(repo.getId())
+                                .repo(repo)
                                 .title(title)
                                 .build()
                         );

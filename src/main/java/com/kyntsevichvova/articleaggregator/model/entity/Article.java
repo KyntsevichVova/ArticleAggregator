@@ -26,7 +26,7 @@ public class Article {
 
     @ManyToOne
     @JoinColumn(name = "REPO_ID")
-    private Long repo_id;
+    private Repo repo;
 
     @Column(name = "ARTICLE_ID")
     private String article_id;

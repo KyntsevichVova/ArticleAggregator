@@ -1,7 +1,7 @@
 DROP TABLE IF EXISTS repo;
 DROP TABLE IF EXISTS author;
 DROP TABLE IF EXISTS article;
-DROP TABLE IF EXISTS article_author
+DROP TABLE IF EXISTS article_author;
 
 CREATE TABLE repo (
     id SERIAL,
@@ -26,7 +26,7 @@ CREATE TABLE article (
     link VARCHAR NOT NULL,
     title VARCHAR,
     annotation TEXT,
-    article_text TEXT
+    article_text TEXT,
     -- date_published, date_scrapped
     PRIMARY KEY(id),
     FOREIGN KEY(repo_id) REFERENCES repo(id)

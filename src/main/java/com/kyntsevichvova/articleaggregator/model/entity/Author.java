@@ -21,7 +21,7 @@ public class Author {
 
     @ManyToOne
     @JoinColumn(name = "REPO_ID")
-    private Long repo_id;
+    private Repo repo;
 
     @Column(name = "NAME", nullable = false)
     private String name;
