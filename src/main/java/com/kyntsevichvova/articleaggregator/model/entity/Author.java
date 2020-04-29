@@ -1,12 +1,9 @@
 package com.kyntsevichvova.articleaggregator.model.entity;
 
-import lombok.Builder;
 import lombok.Data;
 
 import javax.persistence.Column;
 import javax.persistence.Entity;
-import javax.persistence.GeneratedValue;
-import javax.persistence.GenerationType;
 import javax.persistence.Id;
 import javax.persistence.JoinColumn;
 import javax.persistence.ManyToOne;
@@ -15,35 +12,24 @@ import javax.persistence.Table;
 import java.util.List;
 
 @Entity
-@Table(name = "ARTICLE")
+@Table(name = "author")
 @Data
-@Builder
-public class Article {
+public class Author {
 
-    @Id @GeneratedValue(strategy = GenerationType.IDENTITY)
-    @Column(name = "ID", nullable = false)
+    @Id @Column(name = "ID", nullable = false, unique = true)
     private Long id;
 
     @ManyToOne
     @JoinColumn(name = "REPO_ID")
     private Repo repo;
 
-    @Column(name = "ARTICLE_ID")
-    private String article_id;
+    @Column(name = "NAME", nullable = false)
+    private String name;
 
     @Column(name = "LINK")
     private String link;
 
-    @Column(name = "TITLE")
-    private String title;
-
-    @Column(name = "ANNOTATION")
-    private String annotation;
-
-    @Column(name = "ARTICLE_TEXT")
-    private String article_text;
-
-    @OneToMany(mappedBy = "article")
+    @OneToMany(mappedBy = "author")
     private List<ArticleAuthor> articleAuthors;
 
 }
