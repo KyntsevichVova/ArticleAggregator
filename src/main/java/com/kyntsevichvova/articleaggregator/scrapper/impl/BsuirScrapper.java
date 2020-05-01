@@ -19,7 +19,6 @@ import java.util.List;
 @Component
 public class BsuirScrapper implements RepositoryScrapper {
 
-    private final String HOSTNAME = "https://libeldoc.bsuir.by";
     private final String PATH = "/browse?type=dateissued&sort_by=2&order=DESC&rpp=100";
 
     private final String REPO_NAME = "bsuir";
@@ -35,7 +34,7 @@ public class BsuirScrapper implements RepositoryScrapper {
     public List<Article> scrap() {
         List<Article> articles = new ArrayList<>();
         try {
-            Document document = Jsoup.connect(HOSTNAME + PATH)
+            Document document = Jsoup.connect(repo.getHostname() + PATH)
                     .userAgent(ApplicationConstant.FIREFOX_USER_AGENT)
                     .get();
 
@@ -60,7 +59,7 @@ public class BsuirScrapper implements RepositoryScrapper {
                 if (next == null) {
                     hasNext = false;
                 } else {
-                    document = Jsoup.connect(HOSTNAME + next.attr("href"))
+                    document = Jsoup.connect(repo.getHostname() + next.attr("href"))
                             .userAgent(ApplicationConstant.FIREFOX_USER_AGENT)
                             .get();
                 }

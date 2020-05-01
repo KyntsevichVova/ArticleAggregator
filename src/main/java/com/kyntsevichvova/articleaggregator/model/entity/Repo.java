@@ -15,10 +15,13 @@ public class Repo {
     @Id @Column(name = "ID", nullable = false, unique = true)
     private Long id;
 
-    @Column
+    @Column(name = "LINK")
     private String link;
 
-    @Column
+    @Column(name = "NAME")
     private String name;
+
+    @Column(name = "HOSTNAME", nullable = false)
+    private String hostname;
 
 }
