@@ -21,15 +21,10 @@ public class ScrapperService {
     }
 
     @Scheduled(cron = "${scrapping.schedule.cron}")
-    public void deltaScrap() {
+    public void scrap() {
         for (var scrapper : scrappers) {
-            articleRepository.saveAll(scrapper.deltaScrap());
+            articleRepository.saveAll(scrapper.scrap());
         }
     }
 
-    public void fullScrap() {
-        for (var scrapper : scrappers) {
-            articleRepository.saveAll(scrapper.fullScrap());
-        }
-    }
 }

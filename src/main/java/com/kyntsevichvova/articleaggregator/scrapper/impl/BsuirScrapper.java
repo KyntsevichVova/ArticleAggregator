@@ -1,5 +1,6 @@
 package com.kyntsevichvova.articleaggregator.scrapper.impl;
 
+import com.kyntsevichvova.articleaggregator.common.ApplicationConstant;
 import com.kyntsevichvova.articleaggregator.model.entity.Article;
 import com.kyntsevichvova.articleaggregator.model.entity.Repo;
 import com.kyntsevichvova.articleaggregator.repository.RepoRepository;
@@ -20,11 +21,10 @@ public class BsuirScrapper implements RepositoryScrapper {
 
     private final String HOSTNAME = "https://libeldoc.bsuir.by";
     private final String PATH = "/browse?type=dateissued&sort_by=2&order=DESC&rpp=100";
-    private final String USER_AGENT = "Mozilla/5.0 (Windows NT 10.0; Win64; x64; rv:70.0) Gecko/20100101 Firefox/70.0";
 
     private final String REPO_NAME = "bsuir";
 
-    private Repo repo;
+    private final Repo repo;
 
     @Autowired
     public BsuirScrapper(RepoRepository repoRepository) {
@@ -32,11 +32,11 @@ public class BsuirScrapper implements RepositoryScrapper {
     }
 
     @Override
-    public List<Article> fullScrap() {
+    public List<Article> scrap() {
         List<Article> articles = new ArrayList<>();
         try {
             Document document = Jsoup.connect(HOSTNAME + PATH)
-                    .userAgent(USER_AGENT)
+                    .userAgent(ApplicationConstant.FIREFOX_USER_AGENT)
                     .get();
 
             boolean hasNext = true;
@@ -61,7 +61,7 @@ public class BsuirScrapper implements RepositoryScrapper {
                     hasNext = false;
                 } else {
                     document = Jsoup.connect(HOSTNAME + next.attr("href"))
-                            .userAgent(USER_AGENT)
+                            .userAgent(ApplicationConstant.FIREFOX_USER_AGENT)
                             .get();
                 }
             } while (hasNext);
@@ -71,8 +71,4 @@ public class BsuirScrapper implements RepositoryScrapper {
         return articles;
     }
 
-    @Override
-    public List<Article> deltaScrap() {
-        return null;
-    }
 }

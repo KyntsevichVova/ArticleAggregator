@@ -21,6 +21,6 @@ public class ArticleAggregatorApplication implements ApplicationRunner {
 
     @Override
     public void run(ApplicationArguments args) throws Exception {
-        scrapperService.fullScrap();
+        scrapperService.scrap();
     }
 }
