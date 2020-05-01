@@ -41,19 +41,14 @@ public class BsuirScrapper implements RepositoryScrapper {
             boolean hasNext = true;
             do {
                 Elements elements = document.select("div.container div.panel table tbody tr");
-                boolean first = true;
-                for (Element element : elements) {
-                    if (first) {
-                        first = false;
-                    } else {
-                        Elements children = element.children();
-                        String title = children.eq(1).get(0).text();
-                        articles.add(Article.builder()
-                                .repo(repo)
-                                .title(title)
-                                .build()
-                        );
-                    }
+                for (Element element : elements.subList(1, elements.size() - 1)) {
+                    Elements children = element.children();
+                    String title = children.eq(1).get(0).text();
+                    articles.add(Article.builder()
+                            .repo(repo)
+                            .title(title)
+                            .build()
+                    );
                 }
                 Element next = document.selectFirst("div.container div.panel div.panel-heading a.pull-right");
                 if (next == null) {
