@@ -1,10 +1,12 @@
 package com.kyntsevichvova.articleaggregator.scrapper.impl;
 
 import com.kyntsevichvova.articleaggregator.common.ApplicationConstant;
-import com.kyntsevichvova.articleaggregator.model.entity.Article;
+import com.kyntsevichvova.articleaggregator.facade.ArticleFacade;
+import com.kyntsevichvova.articleaggregator.model.dto.CreateArticleDTO;
 import com.kyntsevichvova.articleaggregator.model.entity.Repo;
 import com.kyntsevichvova.articleaggregator.repository.RepoRepository;
 import com.kyntsevichvova.articleaggregator.scrapper.RepositoryScrapper;
+import org.apache.commons.lang3.tuple.Pair;
 import org.jsoup.Jsoup;
 import org.jsoup.nodes.Document;
 import org.jsoup.nodes.Element;
@@ -15,6 +17,7 @@ import org.springframework.stereotype.Component;
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.stream.Collectors;
 
 @Component
 public class BsuirScrapper implements RepositoryScrapper {
@@ -26,13 +29,16 @@ public class BsuirScrapper implements RepositoryScrapper {
     private final Repo repo;
 
     @Autowired
+    private ArticleFacade articleFacade;
+
+    @Autowired
     public BsuirScrapper(RepoRepository repoRepository) {
         repo = repoRepository.findByName(REPO_NAME);
     }
 
     @Override
-    public List<Article> scrap() {
-        List<Article> articles = new ArrayList<>();
+    public List<CreateArticleDTO> scrap() {
+        List<CreateArticleDTO> articles = new ArrayList<>();
         try {
             Document document = Jsoup.connect(repo.getHostname() + PATH)
                     .userAgent(ApplicationConstant.FIREFOX_USER_AGENT)
@@ -41,14 +47,12 @@ public class BsuirScrapper implements RepositoryScrapper {
             boolean hasNext = true;
             do {
                 Elements elements = document.select("div.container div.panel table tbody tr");
-                for (Element element : elements.subList(1, elements.size() - 1)) {
+                elements.remove(0);
+                for (Element element : elements) {
                     Elements children = element.children();
-                    String title = children.eq(1).get(0).text();
-                    articles.add(Article.builder()
-                            .repo(repo)
-                            .title(title)
-                            .build()
-                    );
+                    Element secondColumn = children.eq(1).get(0);
+                    String articleUrl = secondColumn.select("a").get(0).attr("href");
+                    articles.add(scrapArticle(repo.getHostname() + articleUrl));
                 }
                 Element next = document.selectFirst("div.container div.panel div.panel-heading a.pull-right");
                 if (next == null) {
@@ -63,6 +67,69 @@ public class BsuirScrapper implements RepositoryScrapper {
 
         }
         return articles;
+    }
+
+    private CreateArticleDTO scrapArticle(String url) throws IOException {
+
+        if (articleFacade.isArticlePresent(repo, url)) {
+            return CreateArticleDTO.builder()
+                    .repo(repo)
+                    .articleId(url)
+                    .build();
+        }
+
+        String articleUrl = url + "?mode=full";
+        Document document = Jsoup.connect(articleUrl)
+                .userAgent(ApplicationConstant.FIREFOX_USER_AGENT)
+                .get();
+
+        Elements elements = document.select("div.container div.panel table tbody tr");
+
+        List<Pair<String, String>> fields = new ArrayList<>();
+
+        elements.remove(0);
+        for (var element : elements) {
+            Elements children = element.children();
+            String first = children.eq(0).get(0).text();
+            String second = children.eq(1).get(0).text();
+            fields.add(Pair.of(first, second));
+        }
+
+        String link = url;
+        String title = getField(fields, "dc.title");
+        String annotation = getField(fields, "dc.description.abstract");
+        List<String> articleAuthors = fields.stream()
+                .filter(p -> p.getKey().equals("dc.contributor.author"))
+                .map(p -> p.getValue())
+                .collect(Collectors.toList());
+
+        Elements articleFileElements = document.select("div.container div.panel table tbody tr td a.btn");
+
+        String articleFileUrl;
+        try {
+            articleFileUrl = repo.getHostname() + articleFileElements.get(0).attr("href");
+        } catch (IndexOutOfBoundsException e) {
+            System.out.println(articleUrl);
+            articleFileUrl = "";
+        }
+
+        return CreateArticleDTO.builder()
+                .repo(repo)
+                .articleId(link)
+                .annotation(annotation)
+                .link(link)
+                .title(title)
+                .articleAuthors(articleAuthors)
+                .articleFileUrl(articleFileUrl)
+                .build();
+    }
+
+    private String getField(List<Pair<String, String>> fields, String key) {
+        return fields.stream()
+                .filter(p -> p.getKey().equals(key))
+                .map(p -> p.getValue())
+                .findFirst()
+                .orElse("");
     }
 
 }
