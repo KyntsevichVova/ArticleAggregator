@@ -1,9 +1,12 @@
 package com.kyntsevichvova.articleaggregator.scrapper.impl;
 
-import com.kyntsevichvova.articleaggregator.model.entity.Article;
+import com.kyntsevichvova.articleaggregator.common.ApplicationConstant;
+import com.kyntsevichvova.articleaggregator.facade.ArticleFacade;
+import com.kyntsevichvova.articleaggregator.model.dto.CreateArticleDTO;
 import com.kyntsevichvova.articleaggregator.model.entity.Repo;
 import com.kyntsevichvova.articleaggregator.repository.RepoRepository;
 import com.kyntsevichvova.articleaggregator.scrapper.RepositoryScrapper;
+import org.apache.commons.lang3.tuple.Pair;
 import org.jsoup.Jsoup;
 import org.jsoup.nodes.Document;
 import org.jsoup.nodes.Element;
@@ -14,17 +17,19 @@ import org.springframework.stereotype.Component;
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.stream.Collectors;
 
 @Component
 public class BsuirScrapper implements RepositoryScrapper {
 
-    private final String HOSTNAME = "https://libeldoc.bsuir.by";
     private final String PATH = "/browse?type=dateissued&sort_by=2&order=DESC&rpp=100";
-    private final String USER_AGENT = "Mozilla/5.0 (Windows NT 10.0; Win64; x64; rv:70.0) Gecko/20100101 Firefox/70.0";
 
     private final String REPO_NAME = "bsuir";
 
-    private Repo repo;
+    private final Repo repo;
+
+    @Autowired
+    private ArticleFacade articleFacade;
 
     @Autowired
     public BsuirScrapper(RepoRepository repoRepository) {
@@ -32,36 +37,29 @@ public class BsuirScrapper implements RepositoryScrapper {
     }
 
     @Override
-    public List<Article> fullScrap() {
-        List<Article> articles = new ArrayList<>();
+    public List<CreateArticleDTO> scrap() {
+        List<CreateArticleDTO> articles = new ArrayList<>();
         try {
-            Document document = Jsoup.connect(HOSTNAME + PATH)
-                    .userAgent(USER_AGENT)
+            Document document = Jsoup.connect(repo.getHostname() + PATH)
+                    .userAgent(ApplicationConstant.FIREFOX_USER_AGENT)
                     .get();
 
             boolean hasNext = true;
             do {
                 Elements elements = document.select("div.container div.panel table tbody tr");
-                boolean first = true;
+                elements.remove(0);
                 for (Element element : elements) {
-                    if (first) {
-                        first = false;
-                    } else {
-                        Elements children = element.children();
-                        String title = children.eq(1).get(0).text();
-                        articles.add(Article.builder()
-                                .repo(repo)
-                                .title(title)
-                                .build()
-                        );
-                    }
+                    Elements children = element.children();
+                    Element secondColumn = children.eq(1).get(0);
+                    String articleUrl = secondColumn.select("a").get(0).attr("href");
+                    articles.add(scrapArticle(repo.getHostname() + articleUrl));
                 }
                 Element next = document.selectFirst("div.container div.panel div.panel-heading a.pull-right");
                 if (next == null) {
                     hasNext = false;
                 } else {
-                    document = Jsoup.connect(HOSTNAME + next.attr("href"))
-                            .userAgent(USER_AGENT)
+                    document = Jsoup.connect(repo.getHostname() + next.attr("href"))
+                            .userAgent(ApplicationConstant.FIREFOX_USER_AGENT)
                             .get();
                 }
             } while (hasNext);
@@ -71,8 +69,67 @@ public class BsuirScrapper implements RepositoryScrapper {
         return articles;
     }
 
-    @Override
-    public List<Article> deltaScrap() {
-        return null;
+    private CreateArticleDTO scrapArticle(String url) throws IOException {
+
+        if (articleFacade.isArticlePresent(repo, url)) {
+            return CreateArticleDTO.builder()
+                    .repo(repo)
+                    .articleId(url)
+                    .build();
+        }
+
+        String articleUrl = url + "?mode=full";
+        Document document = Jsoup.connect(articleUrl)
+                .userAgent(ApplicationConstant.FIREFOX_USER_AGENT)
+                .get();
+
+        Elements elements = document.select("div.container div.panel table tbody tr");
+
+        List<Pair<String, String>> fields = new ArrayList<>();
+
+        elements.remove(0);
+        for (var element : elements) {
+            Elements children = element.children();
+            String first = children.eq(0).get(0).text();
+            String second = children.eq(1).get(0).text();
+            fields.add(Pair.of(first, second));
+        }
+
+        String link = url;
+        String title = getField(fields, "dc.title");
+        String annotation = getField(fields, "dc.description.abstract");
+        List<String> articleAuthors = fields.stream()
+                .filter(p -> p.getKey().equals("dc.contributor.author"))
+                .map(p -> p.getValue())
+                .collect(Collectors.toList());
+
+        Elements articleFileElements = document.select("div.container div.panel table tbody tr td a.btn");
+
+        String articleFileUrl;
+        try {
+            articleFileUrl = repo.getHostname() + articleFileElements.get(0).attr("href");
+        } catch (IndexOutOfBoundsException e) {
+            System.out.println(articleUrl);
+            articleFileUrl = "";
+        }
+
+        return CreateArticleDTO.builder()
+                .repo(repo)
+                .articleId(link)
+                .annotation(annotation)
+                .link(link)
+                .title(title)
+                .articleAuthors(articleAuthors)
+                .articleFileUrl(articleFileUrl)
+                .build();
     }
+
+    private String getField(List<Pair<String, String>> fields, String key) {
+        return fields.stream()
+                .filter(p -> p.getKey().equals(key))
+                .map(p -> p.getValue())
+                .findFirst()
+                .orElse("");
+    }
+
 }
