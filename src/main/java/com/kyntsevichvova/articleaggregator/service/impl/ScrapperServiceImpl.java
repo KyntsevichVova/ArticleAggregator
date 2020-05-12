@@ -1,6 +1,8 @@
 package com.kyntsevichvova.articleaggregator.service.impl;
 
 import com.kyntsevichvova.articleaggregator.facade.ArticleFacade;
+import com.kyntsevichvova.articleaggregator.model.dto.CreateArticleDTO;
+import com.kyntsevichvova.articleaggregator.model.dto.ScrapArticleDTO;
 import com.kyntsevichvova.articleaggregator.scrapper.RepositoryScrapper;
 import com.kyntsevichvova.articleaggregator.service.ScrapperService;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -21,7 +23,15 @@ public class ScrapperServiceImpl implements ScrapperService {
     @Scheduled(cron = "${scrapping.schedule.cron}")
     public void scrap() {
         for (var scrapper : scrappers) {
-            articleFacade.saveArticles(scrapper.scrap());
+            List<ScrapArticleDTO> availableArticles = scrapper.getAvailableArticles();
+            for (var availableArticle : availableArticles) {
+                if (availableArticle != null && !articleFacade.isArticlePresent(availableArticle.getRepo(), availableArticle.getArticleId())) {
+                    CreateArticleDTO createArticleDTO = scrapper.scrapArticle(availableArticle);
+                    if (createArticleDTO != null) {
+                        articleFacade.saveArticle(createArticleDTO);
+                    }
+                }
+            }
         }
     }
 
