@@ -22,6 +22,7 @@
         <flyway.version>6.4.0</flyway.version>
         <commons.io.version>2.6</commons.io.version>
 		<commons.lang3.version>3.9</commons.lang3.version>
+        <tika.version>1.24.1</tika.version>
     </properties>
 
     <dependencies>
@@ -95,6 +96,12 @@
             <groupId>org.apache.commons</groupId>
             <artifactId>commons-lang3</artifactId>
             <version>${commons.lang3.version}</version>
+        </dependency>
+
+        <dependency>
+            <groupId>org.apache.tika</groupId>
+            <artifactId>tika-parsers</artifactId>
+            <version>${tika.version}</version>
         </dependency>
 
     </dependencies>

@@ -18,4 +18,8 @@ public interface ArticleFacade {
 
     byte[] downloadArticleFile(String articleFileUrl);
 
+    List<Article> getArticles();
+
+    String parseFile(byte[] file);
+
 }

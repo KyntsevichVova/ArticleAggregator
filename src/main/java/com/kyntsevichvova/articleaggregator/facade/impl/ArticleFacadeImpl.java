@@ -3,6 +3,7 @@ package com.kyntsevichvova.articleaggregator.facade.impl;
 import com.kyntsevichvova.articleaggregator.facade.ArticleFacade;
 import com.kyntsevichvova.articleaggregator.model.dto.CreateArticleDTO;
 import com.kyntsevichvova.articleaggregator.model.entity.Article;
+import com.kyntsevichvova.articleaggregator.model.entity.ArticleAuthor;
 import com.kyntsevichvova.articleaggregator.model.entity.Author;
 import com.kyntsevichvova.articleaggregator.model.entity.Repo;
 import com.kyntsevichvova.articleaggregator.repository.ArticleRepository;
@@ -10,10 +11,14 @@ import com.kyntsevichvova.articleaggregator.repository.AuthorRepository;
 import com.kyntsevichvova.articleaggregator.service.AuthorService;
 import org.apache.commons.io.IOUtils;
 import org.apache.commons.lang3.StringUtils;
+import org.apache.solr.client.solrj.SolrClient;
+import org.apache.solr.common.SolrInputDocument;
+import org.apache.tika.Tika;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.io.ByteArrayInputStream;
 import java.io.IOException;
 import java.io.InputStream;
 import java.net.URL;
@@ -31,6 +36,9 @@ public class ArticleFacadeImpl implements ArticleFacade {
 
     @Autowired
     private AuthorService authorService;
+
+    @Autowired
+    private SolrClient solrClient;
 
     @Override
     public void saveArticles(List<CreateArticleDTO> articleDTOList) {
@@ -54,6 +62,10 @@ public class ArticleFacadeImpl implements ArticleFacade {
         }
 
         byte[] articleFile = downloadArticleFile(articleDTO.getArticleFileUrl());
+
+        if (articleFile != null && articleFile.length > 0) {
+            articleDTO.setArticleText(parseFile(articleFile));
+        }
 
         Article article = Article.builder()
                 .repo(repo)
@@ -98,8 +110,41 @@ public class ArticleFacadeImpl implements ArticleFacade {
     }
 
     @Override
-    public void saveArticleToSolr(Article article) {
-
+    public String parseFile(byte[] file) {
+        Tika tika = new Tika();
+        try (InputStream inputStream = new ByteArrayInputStream(file)) {
+            String text = tika.parseToString(inputStream);
+            //System.out.println(text);
+            return text;
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
+        return null;
     }
 
+    @Override
+    public void saveArticleToSolr(Article article) {
+        SolrInputDocument solrInputDocument = new SolrInputDocument();
+        solrInputDocument.addField("id", article.getId());
+        solrInputDocument.addField("title", article.getTitle());
+        solrInputDocument.addField("annotation", article.getAnnotation());
+        solrInputDocument.addField("article_text", article.getArticleText());
+        article.getArticleAuthors()
+                .stream()
+                .map(ArticleAuthor::getAuthor)
+                .map(Author::getName)
+                .forEach(s -> solrInputDocument.addField("article_authors", s));
+
+        try {
+            solrClient.add(solrInputDocument);
+            solrClient.commit();
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
+    }
+
+    @Override
+    public List<Article> getArticles() {
+        return articleRepository.findAll();
+    }
 }
