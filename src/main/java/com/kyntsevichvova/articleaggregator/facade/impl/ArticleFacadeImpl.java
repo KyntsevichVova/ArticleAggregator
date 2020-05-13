@@ -1,7 +1,10 @@
 package com.kyntsevichvova.articleaggregator.facade.impl;
 
 import com.kyntsevichvova.articleaggregator.facade.ArticleFacade;
+import com.kyntsevichvova.articleaggregator.model.converter.SolrListToViewArticleDTOConverter;
 import com.kyntsevichvova.articleaggregator.model.dto.CreateArticleDTO;
+import com.kyntsevichvova.articleaggregator.model.dto.ViewArticleDTO;
+import com.kyntsevichvova.articleaggregator.model.dto.ViewArticlesDTO;
 import com.kyntsevichvova.articleaggregator.model.entity.Article;
 import com.kyntsevichvova.articleaggregator.model.entity.ArticleAuthor;
 import com.kyntsevichvova.articleaggregator.model.entity.Author;
@@ -12,7 +15,10 @@ import com.kyntsevichvova.articleaggregator.service.AuthorService;
 import org.apache.commons.io.IOUtils;
 import org.apache.commons.lang3.StringUtils;
 import org.apache.solr.client.solrj.SolrClient;
+import org.apache.solr.client.solrj.response.QueryResponse;
+import org.apache.solr.common.SolrDocumentList;
 import org.apache.solr.common.SolrInputDocument;
+import org.apache.solr.common.params.MapSolrParams;
 import org.apache.tika.Tika;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
@@ -23,7 +29,9 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.net.URL;
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 
 @Service
 public class ArticleFacadeImpl implements ArticleFacade {
@@ -39,6 +47,9 @@ public class ArticleFacadeImpl implements ArticleFacade {
 
     @Autowired
     private SolrClient solrClient;
+
+    @Autowired
+    private SolrListToViewArticleDTOConverter solrListToViewArticleDTOConverter;
 
     @Override
     public void saveArticles(List<CreateArticleDTO> articleDTOList) {
@@ -123,9 +134,45 @@ public class ArticleFacadeImpl implements ArticleFacade {
     }
 
     @Override
+    public ViewArticlesDTO getArticlesByQuery(String query, int offset, int limit) {
+        final Map<String, String> params = new HashMap<>();
+        if (StringUtils.isNotEmpty(query)) {
+            params.put("q", "query_text:" + query);
+        } else {
+            params.put("q", "*:*");
+        }
+        params.put("fl", "id, annotation, title, article_text, article_authors, link, repo_id");
+        params.put("start", Integer.toString(offset, 10));
+        params.put("rows", Integer.toString(limit, 10));
+        ViewArticlesDTO results;
+        try {
+            QueryResponse response = solrClient.query(new MapSolrParams(params));
+            SolrDocumentList list = response.getResults();
+            results = solrListToViewArticleDTOConverter.convert(list);
+            results.setOffset(offset);
+            results.setLimit(limit);
+        } catch (Exception e) {
+            e.printStackTrace();
+            results = new ViewArticlesDTO();
+        }
+        return results;
+    }
+
+    @Override
+    public ViewArticleDTO getArticleById(Long id) {
+        ViewArticlesDTO articlesDTO = getArticlesByQuery("", 0, 1);
+        if (articlesDTO.getTotal() < 1) {
+            return null;
+        }
+        return articlesDTO.getArticles().get(0);
+    }
+
+    @Override
     public void saveArticleToSolr(Article article) {
         SolrInputDocument solrInputDocument = new SolrInputDocument();
         solrInputDocument.addField("id", article.getId());
+        solrInputDocument.addField("repo_id", article.getRepo().getId());
+        solrInputDocument.addField("link", article.getLink());
         solrInputDocument.addField("title", article.getTitle());
         solrInputDocument.addField("annotation", article.getAnnotation());
         solrInputDocument.addField("article_text", article.getArticleText());

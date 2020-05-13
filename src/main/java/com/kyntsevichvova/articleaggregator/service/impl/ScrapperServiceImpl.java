@@ -22,10 +22,10 @@ public class ScrapperServiceImpl implements ScrapperService {
 
     @Scheduled(cron = "${scrapping.schedule.cron}")
     public void scrap() {
-        /*for (var article : articleFacade.getArticles()) {
+        for (var article : articleFacade.getArticles()) {
             articleFacade.saveArticleToSolr(article);
-        }*/
-        for (var scrapper : scrappers) {
+        }
+        /*for (var scrapper : scrappers) {
             List<ScrapArticleDTO> availableArticles = scrapper.getAvailableArticles();
             for (var availableArticle : availableArticles) {
                 if (availableArticle != null && !articleFacade.isArticlePresent(availableArticle.getRepo(), availableArticle.getArticleId())) {
@@ -35,7 +35,7 @@ public class ScrapperServiceImpl implements ScrapperService {
                     }
                 }
             }
-        }
+        }*/
     }
 
 }

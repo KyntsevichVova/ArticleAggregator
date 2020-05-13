@@ -8,6 +8,8 @@ public interface AuthorService {
 
     Author getOrCreateAuthorByName(Repo repo, String name);
 
+    Author getAuthorByName(Repo repo, String name);
+
     Author createAuthorForRepo(Repo repo, String name);
 
     void addArticleAuthor(Article article, Author author);

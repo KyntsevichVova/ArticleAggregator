@@ -25,8 +25,13 @@ public class AuthorServiceImpl implements AuthorService {
 
     @Override
     public Author getOrCreateAuthorByName(Repo repo, String name) {
-        return Optional.ofNullable(authorRepository.getByRepoAndName(repo, name))
+        return Optional.ofNullable(getAuthorByName(repo, name))
                 .orElseGet(() -> createAuthorForRepo(repo, name));
+    }
+
+    @Override
+    public Author getAuthorByName(Repo repo, String name) {
+        return authorRepository.getByRepoAndName(repo, name);
     }
 
     @Override

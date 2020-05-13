@@ -1,6 +1,8 @@
 package com.kyntsevichvova.articleaggregator.facade;
 
 import com.kyntsevichvova.articleaggregator.model.dto.CreateArticleDTO;
+import com.kyntsevichvova.articleaggregator.model.dto.ViewArticleDTO;
+import com.kyntsevichvova.articleaggregator.model.dto.ViewArticlesDTO;
 import com.kyntsevichvova.articleaggregator.model.entity.Article;
 import com.kyntsevichvova.articleaggregator.model.entity.Repo;
 
@@ -22,4 +24,7 @@ public interface ArticleFacade {
 
     String parseFile(byte[] file);
 
+    ViewArticlesDTO getArticlesByQuery(String query, int offset, int limit);
+
+    ViewArticleDTO getArticleById(Long id);
 }

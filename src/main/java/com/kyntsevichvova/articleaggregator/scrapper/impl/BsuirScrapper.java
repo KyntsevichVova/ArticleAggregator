@@ -28,7 +28,6 @@ public class BsuirScrapper implements RepositoryScrapper {
 
     private final Repo repo;
 
-
     @Autowired
     public BsuirScrapper(RepoRepository repoRepository) {
         repo = repoRepository.findByName(REPO_NAME);
