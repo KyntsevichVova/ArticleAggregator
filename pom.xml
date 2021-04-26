@@ -20,7 +20,7 @@
         <jsoup.version>1.13.1</jsoup.version>
         <postgresql.version>42.2.10</postgresql.version>
         <flyway.version>6.4.0</flyway.version>
-        <commons.io.version>2.6</commons.io.version>
+        <commons.io.version>2.7</commons.io.version>
 		<commons.lang3.version>3.9</commons.lang3.version>
     </properties>
 
